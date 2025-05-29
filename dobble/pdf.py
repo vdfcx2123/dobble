@@ -19,7 +19,7 @@ from dobble.utils import new_folder
 @profile
 def main(cards_folder: str,
          out_print_folder: str,
-         card_size_cm: float,
+         card_size_cm: 9.0,
          n_symbols_per_card: int):
     """
     Merge Dobble cards into a scaled PDF ready to print
