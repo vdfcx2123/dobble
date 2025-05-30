@@ -82,3 +82,43 @@ def main(cards_folder: str,
     # using card_size_pix_layout for resizing and the new padding values.
     # You'll need to adapt the image loading and arrangement logic to use
     # card_size_pix_layout and the calculated padding to create the final A4 pages.
+
+nb_patch_per_batch = nb_patch_in_w*nb_patch_in_h
+    nb_of_batch = math.ceil(len(names)/(nb_patch_per_batch))
+    batches_paths = []
+    for k in tqdm(range(nb_of_batch), "Batch cards"):
+        batch_path = os.path.join(batches_folder, f"batch_cards_{k}.png")
+
+        batch_images = [cv2.imread(os.path.join(cards_folder, name))
+                        if name is not None else 255*np.ones_like(first_img)
+                        for name in names[
+                            nb_patch_per_batch*k:nb_patch_per_batch*k+nb_patch_per_batch
+                            ]]
+
+        columns = []
+        for column in range(nb_patch_in_h):
+            columns.append(h_patch)
+            temp_line = []
+            for line in range(nb_patch_in_w):
+                temp_line.append(w_patch)
+                idx = line*nb_patch_in_h+column
+                if idx < len(batch_images):
+                    temp_line.append(batch_images[idx])
+                else: # if no more cards to add, pad with white
+                    temp_line.append(255*np.ones_like(first_img))
+            temp_line.append(w_patch_right)
+            batch_img = cv2.hconcat(temp_line)
+            columns.append(batch_img)
+
+        columns.append(h_patch_bot)
+        batch_img = cv2.vconcat(columns)
+
+        cv2.imwrite(batch_path, batch_img)
+        batches_paths.append(batch_path)
+
+    a4inpt = (img2pdf.mm_to_pt(210), img2pdf.mm_to_pt(297))
+    layout_fun = img2pdf.get_layout_fun(a4inpt)
+    with open(pdf_path, "wb") as f:
+        f.write(img2pdf.convert(batches_paths, layout_fun=layout_fun))
+
+    print(f"Congratulations! Your Dobble has been saved at {os.path.abspath(pdf_path)}")
